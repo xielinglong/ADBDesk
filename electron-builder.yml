@@ -1,0 +1,55 @@
+appId: com.adbdesk.app
+productName: ADB Desk
+copyright: Copyright © 2026 ADB Desk
+
+directories:
+  buildResources: build
+  output: dist
+
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  # 设计稿目录 62MB，必须排除，否则全部塞进 app.asar
+  - '!design/*'
+  - '!.workbuddy/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
+  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml,pnpm-workspace.yaml}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+
+# 主进程用 realpath 读 resources/icon.png（见 out/main/index.js），需解包成真实文件
+asarUnpack:
+  - resources/**
+
+win:
+  executableName: ADBDesk
+  icon: build/icon.ico
+  # adb 无需管理员权限，保持 asInvoker，安装/运行都不弹 UAC
+  requestedExecutionLevel: asInvoker
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+nsis:
+  # oneClick: false + allowToChangeInstallationDirectory ⇒ 完整安装向导
+  oneClick: false
+  perMachine: false
+  allowElevation: true
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: ADB Desk
+  uninstallDisplayName: ADB Desk
+  runAfterFinish: true
+  # 卸载时保留用户数据（%APPDATA%\ADB Desk\store.json）
+  deleteAppDataOnUninstall: false
+  artifactName: ADB-Desk-${version}-setup.${ext}
+  language: '2052'
+  installerLanguages:
+    - zh_CN
+
+npmRebuild: false
+
+electronDownload:
+  mirror: https://npmmirror.com/mirrors/electron/
