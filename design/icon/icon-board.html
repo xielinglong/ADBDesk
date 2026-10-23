@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>ADB Desk · 应用图标方案</title>
+<style>
+  :root {
+    --bg: #f2f4f7;
+    --surface: #ffffff;
+    --surface-2: #f7f8fa;
+    --line: #e4e7ec;
+    --line-strong: #d3d9e2;
+    --text: #141820;
+    --text-2: #4e5765;
+    --text-3: #6b7583;
+    --accent: #3555ff;
+    --accent-weak: #edf0ff;
+    --ink: #0c0e12;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --sans: Inter, -apple-system, "Segoe UI", "Microsoft YaHei", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 40px 44px 56px;
+    background: var(--bg); color: var(--text);
+    font: 13px/1.6 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  header { margin-bottom: 26px; }
+  .eyebrow { font: 500 10.5px/1 var(--mono); letter-spacing: .13em; text-transform: uppercase; color: var(--accent); }
+  h1 { margin: 10px 0 6px; font-size: 25px; line-height: 1.25; font-weight: 650; letter-spacing: -.015em; }
+  .lede { margin: 0; color: var(--text-2); max-width: 660px; }
+
+  section { margin-top: 34px; }
+  h2 { font-size: 13px; font-weight: 650; margin: 0 0 4px; letter-spacing: .01em; }
+  .sub { margin: 0 0 14px; color: var(--text-3); font-size: 12px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+
+  /* hero */
+  .hero { display: flex; align-items: center; gap: 34px; padding: 30px 34px; }
+  .hero .plate {
+    flex: none; width: 232px; height: 232px; border-radius: 22px;
+    background: radial-gradient(120% 100% at 50% 100%, #141a2e 0%, #0a0c11 60%);
+    display: grid; place-items: center;
+  }
+  .hero img { width: 200px; height: 200px; display: block; }
+  .hero h3 { margin: 0 0 4px; font-size: 19px; font-weight: 650; letter-spacing: -.01em; }
+  .hero .dev { margin: 0 0 14px; font: 12px/1.5 var(--mono); color: var(--text-3); }
+  .hero ul { margin: 0; padding-left: 17px; color: var(--text-2); }
+  .hero li { margin-bottom: 5px; }
+  .hero li b { color: var(--text); font-weight: 600; }
+
+  /* 尺寸阶梯 */
+  .ladder { display: flex; align-items: stretch; gap: 0; padding: 22px 26px 20px; background: var(--ink); border-color: #1d222b; }
+  .ladder .step { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .ladder img { display: block; }
+  .ladder span { font: 10px/1 var(--mono); color: #78828f; }
+  .on-dark { background: var(--ink); border-color: #1d222b; }
+  .on-dark span { color: #7b8595; }
+  .ladder .step { position: relative; height: 268px; justify-content: flex-end; }
+  .ladder .slot { flex: 1; display: grid; place-items: center; }
+  .ladder .slot img { display: block; }
+
+  /* 场景 */
+  .scenes { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .scene { padding: 18px 20px 20px; }
+  .scene h4 { margin: 0 0 12px; font-size: 12px; font-weight: 600; color: var(--text-2); }
+  .taskbar {
+    display: flex; align-items: center; gap: 6px; padding: 8px 12px;
+    background: #1c1c1c; border-radius: 8px;
+  }
+  .taskbar .app {
+    width: 34px; height: 34px; border-radius: 6px; display: grid; place-items: center;
+    background: #2b2b2b; color: #b9c0cc; font: 600 13px/1 var(--sans);
+  }
+  .taskbar .app img { width: 26px; height: 26px; display: block; }
+  .taskbar .active { background: #33373d; }
+  .titlebar {
+    display: flex; align-items: center; gap: 8px; padding: 7px 10px;
+    background: #ffffff; border: 1px solid var(--line); border-radius: 8px 8px 0 0;
+    font-size: 12px; color: var(--text-2);
+  }
+  .titlebar img { width: 16px; height: 16px; }
+  .titlebar .dots { margin-left: auto; color: var(--text-3); letter-spacing: 3px; }
+  .titlebar-body { height: 44px; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 8px 8px; background: var(--surface-2); }
+
+  /* 设备语境 */
+  .devices { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .device {
+    padding: 16px; display: flex; align-items: center; gap: 12px;
+    border: 1px solid var(--line); border-radius: 12px; background: var(--surface);
+  }
+  .device img { width: 40px; height: 40px; flex: none; }
+  .device .n { font-size: 12.5px; font-weight: 600; }
+  .device .d { font-size: 11px; color: var(--text-3); font-family: var(--mono); }
+
+  /* 构造 */
+  .build { display: grid; grid-template-columns: 340px 1fr; gap: 26px; padding: 24px 26px; align-items: start; }
+  .grid-plate { position: relative; width: 300px; height: 300px; }
+  .grid-plate img { width: 300px; height: 300px; display: block; }
+  .grid-plate .guide {
+    position: absolute; inset: 8.2%; border: 1px dashed rgba(53,85,255,.55); border-radius: 6px;
+  }
+  .grid-plate .center-v, .grid-plate .center-h {
+    position: absolute; background: rgba(53,85,255,.35);
+  }
+  .grid-plate .center-v { left: 50%; top: 0; bottom: 0; width: 1px; }
+  .grid-plate .center-h { top: 50%; left: 0; right: 0; height: 1px; }
+  .grid-plate .glyph-box {
+    position: absolute; left: 32%; top: 28.5%; width: 36%; height: 43.4%;
+    border: 1px solid rgba(255,255,255,.55); border-radius: 2px;
+  }
+  .grid-plate .tag {
+    position: absolute; left: 50%; bottom: -22px; transform: translateX(-50%);
+    font: 10px/1 var(--mono); color: var(--text-3); white-space: nowrap;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; font-weight: 600; color: var(--text-3); font-size: 11px; padding: 0 0 8px; }
+  td { padding: 7px 0; border-top: 1px solid var(--line); vertical-align: middle; }
+  td.k { font-family: var(--mono); font-size: 11.5px; color: var(--text-2); white-space: nowrap; padding-right: 14px; }
+  .sw { display: inline-flex; align-items: center; gap: 8px; }
+  .sw i { width: 15px; height: 15px; border-radius: 4px; border: 1px solid rgba(0,0,0,.12); display: inline-block; }
+
+  /* 规范 */
+  .rules { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .rule { padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+  .rule .demo {
+    height: 74px; border-radius: 8px; background: var(--surface-2); display: grid; place-items: center; margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .rule .demo img { display: block; }
+  .rule .t { font-size: 12px; font-weight: 600; }
+  .rule .d { font-size: 11px; color: var(--text-3); line-height: 1.5; margin-top: 2px; }
+  .stretch { transform: scaleX(1.55); }
+  .badge { font: 600 9.5px/1 var(--mono); color: #c03434; }
+  footer { margin-top: 34px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--text-3); font-size: 11.5px; display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">ADB Desk · App Icon</div>
+    <h1>一个不指向任何具体设备的图标</h1>
+    <p class="lede">
+      图形外壳本身就是「设备的屏幕」，里面只有一行终端提示符与光标。
+      不画手机、不画车机，因此手机、平板、车机、TV 用同一张图都成立。
+    </p>
+  </header>
+
+  <section class="card hero">
+    <div class="plate"><img src="png/icon-1024.png" alt="ADB Desk 图标" /></div>
+    <div>
+      <h3>ADB Desk</h3>
+      <p class="dev">&gt;▍ 提示符 + 插入光标 · 石墨底 / 电光蓝</p>
+      <ul>
+        <li><b>提示符</b>代表命令输入，<b>蓝色竖条</b>是终端里待输入的插入光标。</li>
+        <li>外壳不加机身轮廓，<b>设备形态交给应用界面</b>去表达，图标只负责「连上就能下命令」。</li>
+        <li>单一图形走完 16–1024px，<b>不需要小尺寸替换稿</b>，各端观感一致。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>尺寸阶梯</h2>
+    <p class="sub">16px 时仍能分辨「折线 + 竖条」两个元素；不用做小尺寸特调稿</p>
+    <div class="card ladder on-dark">
+      <div class="step"><div class="slot"><img src="png/icon-16.png" width="16" height="16"></div><span>16</span></div>
+      <div class="step"><div class="slot"><img src="png/icon-24.png" width="24" height="24"></div><span>24</span></div>
+      <div class="step"><div class="slot"><img src="png/icon-32.png" width="32" height="32"></div><span>32</span></div>
+      <div class="step"><div class="slot"><img src="png/icon-48.png" width="48" height="48"></div><span>48</span></div>
+      <div class="step"><div class="slot"><img src="png/icon-64.png" width="64" height="64"></div><span>64</span></div>
+      <div class="step"><div class="slot"><img src="png/icon-128.png" width="128" height="128"></div><span>128</span></div>
+      <div class="step"><div class="slot"><img src="png/icon-256.png" width="256" height="256"></div><span>256</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>使用场景</h2>
+    <p class="sub">浅色系统栏与深色任务栏都不需要换色稿，底色自带对比</p>
+    <div class="scenes">
+      <div class="card scene">
+        <h4>Windows 任务栏</h4>
+        <div class="taskbar">
+          <div class="app">⊞</div>
+          <div class="app">⌕</div>
+          <div class="app active"><img src="png/icon-32.png" alt=""></div>
+          <div class="app">▤</div>
+          <div class="app">◈</div>
+        </div>
+      </div>
+      <div class="card scene">
+        <h4>窗口标题栏</h4>
+        <div class="titlebar">
+          <img src="png/icon-16.png" alt="">
+          <span>ADB Desk</span>
+          <span class="dots">— ▢ ✕</span>
+        </div>
+        <div class="titlebar-body"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>设备语境</h2>
+    <p class="sub">同一张图放进不同设备的界面里，都不出现「这明明是手机」的违和感</p>
+    <div class="devices">
+      <div class="device"><img src="png/icon-64.png" alt=""><div><div class="n">手机</div><div class="d">Pixel / 小米</div></div></div>
+      <div class="device"><img src="png/icon-64.png" alt=""><div><div class="n">平板</div><div class="d">Tablet</div></div></div>
+      <div class="device"><img src="png/icon-64.png" alt=""><div><div class="n">车机</div><div class="d">IVI / AAOS</div></div></div>
+      <div class="device"><img src="png/icon-64.png" alt=""><div><div class="n">电视盒子</div><div class="d">Android TV</div></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>构造</h2>
+    <p class="sub">1024 网格 · 84px 安全边 · 超椭圆指数 5.0（贴近 macOS squircle）</p>
+    <div class="card build">
+      <div class="grid-plate">
+        <img src="icon.svg" alt="">
+        <div class="guide"></div>
+        <div class="center-v"></div>
+        <div class="center-h"></div>
+        <div class="glyph-box"></div>
+        <div class="tag">点线 = 84px 安全区</div>
+      </div>
+      <table>
+        <tr><th>令牌</th><th>值</th><th>说明</th></tr>
+        <tr><td class="k">底板 / 起</td><td><span class="sw"><i style="background:#2b3343"></i>#2B3343</span></td><td>左上受光面</td></tr>
+        <tr><td class="k">底板 / 止</td><td><span class="sw"><i style="background:#0a0c11"></i>#0A0C11</span></td><td>与深色主题 <code>--console-bg</code> 同源</td></tr>
+        <tr><td class="k">底部辉光</td><td><span class="sw"><i style="background:#3555ff"></i>#3555FF · 30%</span></td><td>径向，压住底色</td></tr>
+        <tr><td class="k">提示符</td><td><span class="sw"><i style="background:#ffffff"></i>#FFFFFF</span></td><td>描边 104，圆头圆角</td></tr>
+        <tr><td class="k">光标</td><td><span class="sw"><i style="background:#2b49f5"></i>#2B49F5</span></td><td>96×252，圆角 30</td></tr>
+        <tr><td class="k">图形占幅</td><td class="k">368×440 / 1024</td><td>宽 36%、高 43%，居中</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>使用禁忌</h2>
+    <p class="sub">图标只有一份源文件，任何变形都会破坏 16px 下的可读性</p>
+    <div class="rules">
+      <div class="rule"><div class="demo"><img class="stretch" src="png/icon-64.png" width="64" height="64"></div><div class="t">不要拉伸</div><div class="d">只做等比缩放</div></div>
+      <div class="rule"><div class="demo" style="background:#e8ebf0"><img src="png/icon-64.png" width="64" height="64" style="border-radius:12px;opacity:.35"></div><div class="t">不要降透明度</div><div class="d">置灰请用系统禁用态</div></div>
+      <div class="rule"><div class="demo"><img src="png/icon-64.png" width="64" height="64" style="filter:hue-rotate(150deg)"></div><div class="t">不要改色相</div><div class="d">蓝是品牌唯一强调色</div></div>
+      <div class="rule"><div class="demo" style="background:#eef1f5"><img src="png/icon-64.png" width="64" height="64" style="box-shadow:0 8px 16px rgba(16,24,40,.45)"></div><div class="t">不要加投影</div><div class="d">放在任何底色上都直接压上去</div></div>
+    </div>
+  </section>
+
+  <footer>
+    <span>ADB Desk · App Icon v1</span>
+    <span>源文件 icon.svg · 导出 png/ · icon.ico · icon.icns</span>
+  </footer>
+</div>
+</body>
+</html>

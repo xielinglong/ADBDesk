@@ -1,0 +1,2145 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ADB Desk · 界面设计方案（高保真原型）</title>
+<style>
+/* ============================================================
+   1. 设计令牌 Design Tokens
+   ============================================================ */
+:root {
+  /* 表面 / 描边 */
+  --bg: #f2f4f7;
+  --surface: #ffffff;
+  --surface-2: #f7f8fa;
+  --sunken: #eef1f5;
+  --line: #e4e7ec;
+  --line-strong: #d3d9e2;
+  --console-bg: #fafbfc;
+  --seg-active: #ffffff;
+
+  /* 文本 */
+  --text: #141820;
+  --text-2: #4e5765;
+  --text-3: #6b7583;
+
+  /* 品牌 / 语义 */
+  --accent: #3555ff;
+  --accent-hover: #2743e4;
+  --accent-weak: #edf0ff;
+  --accent-line: #d6deff;
+  --on-accent: #ffffff;
+  --gold: #b1800f;
+
+  --ok: #0a7a4c;
+  --ok-bg: #e8f6ef;
+  --ok-line: #b9e5cf;
+  --warn: #a2620a;
+  --warn-bg: #fff7e6;
+  --warn-line: #f0dcb0;
+  --danger: #c03434;
+  --danger-bg: #fdeeee;
+  --danger-line: #f4cccc;
+  --on-danger: #ffffff;
+
+  /* 形状 / 阴影 / 字体 */
+  --r-sm: 8px;
+  --r: 10px;
+  --r-lg: 12px;
+  --r-xl: 14px;
+  --shadow-float: 0 1px 2px rgba(16, 24, 40, .06), 0 14px 34px -10px rgba(16, 24, 40, .22);
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, .04);
+  --sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", Roboto, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+[data-theme="dark"] {
+  --bg: #0c0e12;
+  --surface: #14171c;
+  --surface-2: #191d24;
+  --sunken: #101318;
+  --line: #242a33;
+  --line-strong: #333a46;
+  --console-bg: #0b0d11;
+  --seg-active: #252b36;
+
+  --text: #e9ecf2;
+  --text-2: #a3acba;
+  --text-3: #8791a1;
+
+  --accent: #7c93ff;
+  --accent-hover: #93a6ff;
+  --accent-weak: #1a2242;
+  --accent-line: #2b3a6c;
+  --on-accent: #0b1020;
+  --gold: #e0b34a;
+
+  --ok: #35c28a;
+  --ok-bg: #12251d;
+  --ok-line: #1c4534;
+  --warn: #e5c877;
+  --warn-bg: #2a2214;
+  --warn-line: #4a3d16;
+  --danger: #f0736f;
+  --danger-bg: #2a1717;
+  --danger-line: #4a2525;
+  --on-danger: #2a1010;
+
+  --shadow-float: 0 1px 2px rgba(0, 0, 0, .4), 0 18px 40px -12px rgba(0, 0, 0, .7);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, .3);
+}
+
+/* ============================================================
+   2. 基础样式
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.55 var(--sans);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+input, textarea, select { font: inherit; color: inherit; }
+h1, h2, h3, p { margin: 0; }
+::selection { background: var(--accent-weak); color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+input:focus-visible, textarea:focus-visible { outline: none; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--text-3); background-clip: content-box; }
+
+.sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+.i {
+  width: 16px; height: 16px; flex: none;
+  fill: none; stroke: currentColor; stroke-width: 1.8;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.i-14 { width: 14px; height: 14px; }
+.i-12 { width: 12px; height: 12px; }
+.i-fill { fill: currentColor; stroke: none; }
+
+/* ============================================================
+   3. 应用骨架
+   ============================================================ */
+.app {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  height: 100%;
+}
+
+/* ---- 侧边栏 ---- */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 12px 10px 10px;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  min-height: 0;
+}
+.brand { display: flex; align-items: center; gap: 9px; padding: 4px 6px 0; }
+.brand-mark {
+  width: 30px; height: 30px; border-radius: 9px;
+  background: linear-gradient(155deg, #4a68ff, #2b3fd6);
+  display: grid; place-items: center; color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .28), 0 2px 6px rgba(43, 63, 214, .28);
+}
+.brand-mark .i { width: 17px; height: 17px; stroke-width: 2; }
+.brand-name { font-size: 13px; font-weight: 600; line-height: 1.2; letter-spacing: .1px; }
+.brand-sub { font-size: 10.5px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+
+.cap {
+  font-size: 10px; font-weight: 600; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--text-3);
+  padding: 0 8px;
+}
+
+/* 设备切换器 */
+.device { position: relative; }
+.device-btn {
+  width: 100%; display: flex; align-items: center; gap: 9px;
+  padding: 9px; text-align: left;
+  border: 1px solid var(--line); border-radius: var(--r);
+  background: var(--surface-2);
+  transition: border-color .12s, background .12s;
+}
+.device-btn:hover { border-color: var(--line-strong); background: var(--surface); }
+.device-ico {
+  width: 26px; height: 26px; border-radius: 8px; flex: none;
+  background: var(--accent-weak); color: var(--accent);
+  display: grid; place-items: center;
+}
+.device-txt { flex: 1; min-width: 0; }
+.device-model {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12.5px; font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.device-serial {
+  margin-top: 1px; font-family: var(--mono); font-size: 10.5px; color: var(--text-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.chev { color: var(--text-3); transition: transform .15s; flex: none; }
+.device.open .chev { transform: rotate(180deg); }
+.device-menu {
+  position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 40;
+  display: none; padding: 5px;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r); box-shadow: var(--shadow-float);
+}
+.device.open .device-menu { display: block; }
+.device-item {
+  width: 100%; display: flex; align-items: center; gap: 8px;
+  padding: 7px 8px; border-radius: 7px; text-align: left;
+}
+.device-item:hover { background: var(--surface-2); }
+.device-item.is-current { background: var(--accent-weak); }
+.device-item .m { flex: 1; min-width: 0; }
+.device-item .n { font-size: 12px; }
+.device-item.is-current .n { color: var(--accent); font-weight: 500; }
+.device-item .s { font-family: var(--mono); font-size: 9.5px; color: var(--text-3); }
+.device-sep { height: 1px; margin: 4px 6px; background: var(--line); }
+.device-refresh {
+  width: 100%; display: flex; align-items: center; gap: 8px;
+  padding: 7px 8px; border-radius: 7px; font-size: 11.5px; color: var(--text-2);
+}
+.device-refresh:hover { background: var(--surface-2); color: var(--text); }
+
+/* 导航 */
+.nav { display: flex; flex-direction: column; gap: 2px; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  height: 34px; padding: 0 9px; border-radius: var(--r-sm);
+  color: var(--text-2); font-size: 12.5px;
+  transition: background .12s, color .12s;
+}
+.nav-item .i { color: var(--text-3); transition: color .12s; }
+.nav-item:hover { background: var(--surface-2); color: var(--text); }
+.nav-item:hover .i { color: var(--text-2); }
+.nav-item.is-active { background: var(--accent-weak); color: var(--accent); font-weight: 500; }
+.nav-item.is-active .i { color: var(--accent); }
+.nav-count {
+  margin-left: auto; font-size: 10.5px; color: var(--text-2);
+  background: var(--sunken); border-radius: 20px; padding: 0 7px;
+  line-height: 16px; font-variant-numeric: tabular-nums;
+}
+.nav-item.is-active .nav-count { background: var(--surface); color: var(--accent); }
+
+/* 侧栏底部 */
+.side-foot {
+  margin-top: auto; display: flex; flex-direction: column; gap: 9px;
+  padding-top: 10px; border-top: 1px solid var(--line);
+}
+.theme-switch {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 2px;
+  padding: 2px; background: var(--sunken); border-radius: var(--r-sm);
+}
+.theme-switch button {
+  height: 26px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  font-size: 11px; color: var(--text-2);
+}
+.theme-switch button.on {
+  background: var(--seg-active); color: var(--text);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, .1);
+}
+.adb-line {
+  display: flex; align-items: center; gap: 6px; padding: 0 4px;
+  font-size: 10.5px; color: var(--text-3); font-variant-numeric: tabular-nums;
+}
+
+/* ---- 主区域 ---- */
+.main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.topbar {
+  flex: none; height: 56px;
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.topbar h1 { font-size: 14.5px; font-weight: 600; letter-spacing: -.005em; }
+.topbar p { margin-top: 1px; font-size: 11.5px; color: var(--text-3); }
+.top-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+.palette-btn {
+  display: flex; align-items: center; gap: 8px;
+  height: 30px; padding: 0 8px 0 10px;
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: var(--surface-2); color: var(--text-3); font-size: 11.5px;
+  transition: border-color .12s, color .12s;
+}
+.palette-btn:hover { border-color: var(--line-strong); color: var(--text-2); }
+.palette-btn kbd { margin-left: 4px; }
+
+.content {
+  flex: 1; min-height: 0;
+  display: flex; flex-direction: column;
+  padding: 16px 18px 18px;
+}
+.page { display: none; flex: 1; min-height: 0; }
+.page.is-active { display: block; overflow: auto; }
+.page[data-page="overview"].is-active,
+.page[data-page="settings"].is-active { display: block; overflow: auto; }
+.page[data-page="commands"].is-active,
+.page[data-page="shots"].is-active {
+  display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 14px; overflow: hidden;
+}
+.page[data-page="shots"].is-active { grid-template-columns: 320px minmax(0, 1fr); }
+
+/* ============================================================
+   4. 通用组件
+   ============================================================ */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 30px; padding: 0 11px;
+  border: 1px solid var(--line-strong); border-radius: var(--r-sm);
+  background: var(--surface); color: var(--text);
+  font-size: 12.5px; white-space: nowrap;
+  transition: background .12s, border-color .12s, color .12s;
+}
+.btn:hover:not(:disabled) { background: var(--surface-2); border-color: var(--text-3); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.primary {
+  background: var(--accent); border-color: var(--accent); color: var(--on-accent);
+  font-weight: 500; box-shadow: 0 1px 2px rgba(43, 63, 214, .22);
+}
+.btn.primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn.ghost { border-color: transparent; background: transparent; color: var(--text-2); }
+.btn.ghost:hover:not(:disabled) { background: var(--surface-2); color: var(--text); border-color: transparent; }
+.btn.danger { color: var(--danger); border-color: var(--danger-line); }
+.btn.danger:hover:not(:disabled) { background: var(--danger-bg); border-color: var(--danger); }
+.btn.icon { width: 30px; padding: 0; }
+.btn.icon.sm { width: 26px; }
+.btn.sm { height: 26px; padding: 0 8px; font-size: 11.5px; border-radius: 7px; }
+
+.input, .textarea {
+  width: 100%; padding: 6px 9px;
+  border: 1px solid var(--line-strong); border-radius: var(--r-sm);
+  background: var(--surface); outline: none;
+  font-size: 12.5px;
+  transition: border-color .12s, box-shadow .12s;
+}
+.input:focus, .textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-weak);
+}
+.textarea {
+  font-family: var(--mono); font-size: 12px; line-height: 1.6;
+  min-height: 64px; resize: vertical;
+}
+.field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.field > label { font-size: 11px; font-weight: 500; color: var(--text-3); }
+.field .hint { font-size: 10.5px; color: var(--text-3); }
+.row { display: flex; align-items: center; gap: 8px; }
+.grow { flex: 1; min-width: 0; }
+
+.seg { display: inline-flex; gap: 2px; padding: 2px; background: var(--sunken); border-radius: var(--r-sm); }
+.seg button {
+  height: 24px; padding: 0 12px; border-radius: 6px;
+  font-family: var(--mono); font-size: 11px; color: var(--text-2);
+  transition: background .12s, color .12s;
+}
+.seg button.on {
+  background: var(--seg-active); color: var(--text); font-weight: 600;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, .1);
+}
+
+.pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 20px; padding: 0 8px; border-radius: 20px;
+  border: 1px solid var(--line); background: var(--surface-2);
+  font-size: 10.5px; color: var(--text-2);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.pill.ok { background: var(--ok-bg); border-color: var(--ok-line); color: var(--ok); }
+.pill.warn { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn); }
+.pill.bad { background: var(--danger-bg); border-color: var(--danger-line); color: var(--danger); }
+.pill.mono { font-family: var(--mono); font-size: 10px; height: 18px; padding: 0 6px; border-radius: 5px; }
+
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-3); flex: none; display: inline-block; }
+.dot.ok { background: var(--ok); }
+.dot.err { background: var(--danger); }
+.dot.run { background: var(--accent); animation: pulse 1.3s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.82); } }
+
+kbd {
+  font-family: var(--sans); font-size: 10px; line-height: 1;
+  padding: 3px 5px; border-radius: 4px;
+  border: 1px solid var(--line); border-bottom-color: var(--line-strong);
+  background: var(--surface); color: var(--text-3);
+  box-shadow: 0 1px 0 var(--line);
+}
+
+.panel {
+  display: flex; flex-direction: column; min-height: 0; min-width: 0;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-lg); box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.panel-head {
+  flex: none; height: 44px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 12px; border-bottom: 1px solid var(--line);
+}
+.panel-title { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; }
+.count {
+  font-style: normal; font-weight: 500; font-size: 10.5px;
+  color: var(--text-2); background: var(--sunken);
+  border-radius: 20px; padding: 1px 7px; font-variant-numeric: tabular-nums;
+}
+.panel-head .right { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+.panel-foot {
+  flex: none; height: 30px; display: flex; align-items: center; gap: 10px;
+  padding: 0 12px; border-top: 1px solid var(--line);
+  font-size: 10.5px; color: var(--text-3);
+}
+.panel-foot .spacer { margin-left: auto; }
+
+/* ============================================================
+   5. 概览
+   ============================================================ */
+.overview { display: flex; flex-direction: column; gap: 10px; }
+
+.hero {
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 20px;
+  border: 1px solid var(--line); border-radius: var(--r-xl);
+  background: linear-gradient(135deg, var(--surface) 30%, var(--surface-2) 100%);
+}
+.hero::after {
+  content: ""; position: absolute; right: -50px; top: -90px;
+  width: 240px; height: 240px; border-radius: 50%;
+  background: radial-gradient(circle, var(--accent-weak) 0%, transparent 68%);
+  pointer-events: none;
+}
+.hero-ico {
+  width: 50px; height: 50px; border-radius: 14px; flex: none;
+  display: grid; place-items: center;
+  background: var(--surface); border: 1px solid var(--line);
+  color: var(--accent); box-shadow: var(--shadow-card);
+}
+.hero-ico .i { width: 24px; height: 24px; }
+.hero-main { flex: 1; min-width: 0; }
+.hero-eyebrow { font-size: 10px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--text-3); }
+.hero h2 { font-size: 21px; font-weight: 650; letter-spacing: -.02em; line-height: 1.3; margin-top: 2px; }
+.hero-meta {
+  margin-top: 3px; font-size: 11.5px; color: var(--text-2);
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.hero-meta code { font-family: var(--mono); font-size: 10.5px; color: var(--text-3); }
+.hero-pills { display: flex; gap: 6px; margin-top: 9px; flex-wrap: wrap; }
+.hero-actions { display: flex; gap: 8px; align-items: center; position: relative; z-index: 1; }
+
+.sec { display: flex; align-items: baseline; gap: 8px; margin-top: 2px; }
+.sec h3 { font-size: 12px; font-weight: 600; }
+.sec span { font-size: 11px; color: var(--text-3); }
+
+.quick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.quick button {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px; text-align: left;
+  border: 1px solid var(--line); border-radius: var(--r);
+  background: var(--surface);
+  transition: border-color .12s, background .12s;
+}
+.quick button:hover:not(:disabled) { border-color: var(--accent-line); background: var(--accent-weak); }
+.quick button:disabled { opacity: .45; cursor: not-allowed; }
+.quick .qi {
+  width: 28px; height: 28px; border-radius: 8px; flex: none;
+  display: grid; place-items: center;
+  background: var(--sunken); color: var(--text-2);
+  transition: background .12s, color .12s;
+}
+.quick button:hover .qi { background: var(--surface); color: var(--accent); }
+.quick .qt { flex: 1; min-width: 0; }
+.quick .ql { display: block; font-size: 12.5px; font-weight: 500; }
+.quick .qc {
+  display: block; font-family: var(--mono); font-size: 10px; color: var(--text-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.cols { display: grid; grid-template-columns: 1.05fr 1fr; gap: 14px; align-items: start; }
+.recent { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px; }
+.recent button {
+  padding: 0; overflow: hidden; text-align: left;
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: var(--surface-2);
+  transition: border-color .12s;
+}
+.recent button:hover { border-color: var(--accent); }
+.recent img { display: block; width: 100%; height: 96px; object-fit: cover; object-position: top; }
+.recent .rm {
+  display: block; padding: 4px 6px 5px; background: var(--surface);
+  font-size: 9.5px; color: var(--text-3); font-variant-numeric: tabular-nums;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.favs { padding: 6px; }
+.fav-row {
+  display: flex; align-items: center; gap: 9px;
+  width: 100%; padding: 7px 8px; border-radius: var(--r-sm); text-align: left;
+}
+.fav-row:hover { background: var(--surface-2); }
+.fav-row .star { color: var(--gold); width: 12px; height: 12px; fill: currentColor; stroke: none; flex: none; }
+.fav-row .fn { font-size: 12px; font-weight: 500; white-space: nowrap; }
+.fav-row .fc {
+  flex: 1; min-width: 0; font-family: var(--mono); font-size: 10px; color: var(--text-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.fav-row .go { color: var(--text-3); opacity: 0; transition: opacity .12s; }
+.fav-row:hover .go { opacity: 1; color: var(--accent); }
+
+.last-run { min-height: 112px; }
+.last-run-body {
+  flex: 1; min-height: 0; overflow: hidden;
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 10px 12px;
+  background: var(--console-bg);
+  font-family: var(--mono); font-size: 11.5px; line-height: 1.7;
+}
+.last-cmd { color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.last-out { color: var(--text-2); white-space: pre-wrap; overflow: hidden; }
+.last-out.dim { color: var(--text-3); }
+
+/* ============================================================
+   6. 命令台
+   ============================================================ */
+.search { position: relative; flex: none; padding: 10px 10px 8px; border-bottom: 1px solid var(--line); }
+.search .i { position: absolute; left: 19px; top: 50%; transform: translateY(-46%); color: var(--text-3); width: 14px; height: 14px; }
+.search input {
+  width: 100%; height: 30px; padding: 0 9px 0 29px;
+  border: 1px solid transparent; border-radius: var(--r-sm);
+  background: var(--surface-2); outline: none; font-size: 12px;
+  transition: border-color .12s, background .12s, box-shadow .12s;
+}
+.search input:focus { background: var(--surface); border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-weak); }
+
+.cmd-list { flex: 1; min-height: 0; overflow: auto; padding: 6px; }
+.cmd {
+  display: flex; flex-direction: column; gap: 2px;
+  width: 100%; margin-bottom: 1px; padding: 7px 8px;
+  border: 1px solid transparent; border-radius: var(--r-sm); text-align: left;
+  transition: background .1s, border-color .1s;
+}
+.cmd:hover { background: var(--surface-2); }
+.cmd.is-active { background: var(--accent-weak); border-color: var(--accent-line); }
+.cmd-top { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.cmd-name { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cmd.is-active .cmd-name { color: var(--accent); }
+.cmd-code {
+  font-family: var(--mono); font-size: 10.5px; color: var(--text-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.star-btn {
+  width: 18px; height: 18px; display: grid; place-items: center; border-radius: 4px; flex: none;
+  color: var(--line-strong); opacity: 0;
+  transition: opacity .12s, color .12s, background .12s;
+}
+.cmd:hover .star-btn, .cmd.is-active .star-btn, .star-btn.on, .star-btn:focus-visible { opacity: 1; }
+.star-btn:hover { color: var(--gold); background: var(--sunken); }
+.star-btn.on { color: var(--gold); }
+.star-btn .i { width: 12px; height: 12px; fill: currentColor; stroke: none; }
+
+.stack { display: grid; grid-template-rows: auto minmax(190px, 1fr); gap: 14px; min-height: 0; }
+.editor-body { display: flex; flex-direction: column; gap: 11px; padding: 12px; }
+.editor-foot {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px; border-top: 1px solid var(--line); background: var(--surface-2);
+}
+.editor-foot .hint { font-size: 10.5px; color: var(--text-3); display: flex; align-items: center; gap: 6px; }
+.target {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 26px; padding: 0 9px; border-radius: 7px;
+  background: var(--sunken); font-family: var(--mono); font-size: 10.5px; color: var(--text-2);
+  max-width: 230px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+
+.console {
+  flex: 1; min-height: 0; overflow: auto;
+  padding: 10px 12px; background: var(--console-bg);
+  font-family: var(--mono); font-size: 11.8px; line-height: 1.65;
+  color: var(--text); user-select: text;
+}
+.ln { white-space: pre-wrap; word-break: break-word; animation: fadein .16s ease; }
+@keyframes fadein { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+.ln.cmd { color: var(--accent); }
+.ln.err { color: var(--danger); }
+.ln.dim { color: var(--text-3); }
+.console-foot {
+  flex: none; height: 28px; display: flex; align-items: center; gap: 14px;
+  padding: 0 12px; border-top: 1px solid var(--line);
+  font-size: 10.5px; color: var(--text-3); font-variant-numeric: tabular-nums;
+}
+.console-foot .spacer { margin-left: auto; }
+.run-state { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-2); }
+
+/* ============================================================
+   7. 截图
+   ============================================================ */
+.thumbs {
+  flex: 1; min-height: 0; overflow: auto;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  padding: 8px; align-content: start;
+}
+.thumb {
+  position: relative; padding: 0; overflow: hidden; text-align: left; cursor: pointer;
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: var(--surface-2);
+  transition: border-color .12s, box-shadow .12s;
+}
+.thumb:hover { border-color: var(--line-strong); }
+.thumb.is-active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-weak); }
+.thumb img { display: block; width: 100%; aspect-ratio: 9 / 16; object-fit: cover; object-position: top; }
+.thumb .tm {
+  display: block; padding: 3px 6px 4px; background: var(--surface);
+  font-size: 9.5px; color: var(--text-3); font-variant-numeric: tabular-nums;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.thumb .del {
+  position: absolute; top: 4px; right: 4px;
+  width: 20px; height: 20px; border-radius: 50%;
+  display: none; place-items: center;
+  background: rgba(10, 12, 16, .62); color: #fff;
+  backdrop-filter: blur(4px);
+}
+.thumb:hover .del, .thumb:focus-within .del { display: grid; }
+.thumb .del:hover { background: var(--danger); }
+.thumb .del .i { width: 11px; height: 11px; }
+
+.preview {
+  position: relative; flex: 1; min-height: 0; overflow: hidden;
+  background-color: var(--surface-2);
+  background-image: radial-gradient(var(--line) 1px, transparent 1px);
+  background-size: 14px 14px;
+}
+.preview img {
+  position: absolute; inset: 18px; margin: auto;
+  width: auto; height: auto;
+  max-width: calc(100% - 36px); max-height: calc(100% - 36px);
+  object-fit: contain;
+  border-radius: 10px; border: 1px solid var(--line);
+  box-shadow: 0 12px 34px -8px rgba(16, 24, 40, .28);
+}
+.preview-foot {
+  flex: none; height: 32px; display: flex; align-items: center; gap: 16px;
+  padding: 0 12px; border-top: 1px solid var(--line);
+  font-size: 10.5px; color: var(--text-3); font-variant-numeric: tabular-nums;
+}
+.preview-foot .spacer { margin-left: auto; }
+.shot-name { font-family: var(--mono); color: var(--text-2); }
+
+/* ============================================================
+   8. 设置
+   ============================================================ */
+.settings { display: flex; flex-direction: column; gap: 14px; max-width: 760px; }
+.set-card { border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); overflow: hidden; }
+.set-head { padding: 13px 16px 11px; border-bottom: 1px solid var(--line); }
+.set-head h3 { font-size: 12.5px; font-weight: 600; }
+.set-head p { margin-top: 2px; font-size: 11px; color: var(--text-3); }
+.set-row {
+  display: flex; align-items: center; gap: 20px;
+  padding: 13px 16px; border-bottom: 1px solid var(--line);
+}
+.set-row:last-child { border-bottom: 0; }
+.set-info { flex: 1; min-width: 0; }
+.set-info .t { font-size: 12.5px; font-weight: 500; display: flex; align-items: center; gap: 7px; }
+.set-info .d { margin-top: 2px; font-size: 11px; color: var(--text-3); }
+.set-ctl { display: flex; align-items: center; gap: 8px; flex: none; }
+.path {
+  max-width: 340px; padding: 5px 9px; border-radius: 7px;
+  background: var(--surface-2); border: 1px solid var(--line);
+  font-family: var(--mono); font-size: 10.5px; color: var(--text-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.set-ctl .seg button { padding: 0 11px; font-family: var(--sans); font-size: 11.5px; }
+
+/* ============================================================
+   9. 浮层：命令面板 / 提示
+   ============================================================ */
+.overlay {
+  position: fixed; inset: 0; z-index: 80;
+  display: none; align-items: flex-start; justify-content: center;
+  padding-top: 12vh;
+  background: rgba(12, 15, 20, .42);
+  backdrop-filter: blur(3px);
+}
+.overlay.open { display: flex; }
+.palette {
+  width: 560px; max-width: calc(100vw - 40px);
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-xl); box-shadow: var(--shadow-float);
+  overflow: hidden;
+  animation: pop .16s ease;
+}
+@keyframes pop { from { opacity: 0; transform: translateY(-6px) scale(.99); } to { opacity: 1; transform: none; } }
+.palette-input { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.palette-input .i { color: var(--text-3); }
+.palette-input input { flex: 1; border: 0; outline: none; background: transparent; font-size: 14px; }
+.palette-list { max-height: 320px; overflow: auto; padding: 6px; }
+.p-group { padding: 7px 9px 4px; font-size: 10px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--text-3); }
+.p-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 9px; border-radius: var(--r-sm); text-align: left; }
+.p-row:hover, .p-row.on { background: var(--accent-weak); }
+.p-row .i { color: var(--text-3); }
+.p-row:hover .i, .p-row.on .i { color: var(--accent); }
+.p-row .pt { flex: 1; min-width: 0; font-size: 12.5px; }
+.p-row .pk { font-size: 10px; font-family: var(--mono); color: var(--text-3); }
+.p-empty { padding: 24px; text-align: center; font-size: 12px; color: var(--text-3); }
+.palette-foot {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 12px; border-top: 1px solid var(--line);
+  background: var(--surface-2); font-size: 10.5px; color: var(--text-3);
+}
+.palette-foot .sp { margin-left: auto; }
+
+.toast {
+  position: fixed; left: 50%; bottom: 24px; z-index: 90;
+  transform: translate(-50%, 8px);
+  max-width: 72vw; padding: 8px 14px; border-radius: 9px;
+  background: var(--text); color: var(--surface);
+  font-size: 12px; box-shadow: var(--shadow-float);
+  opacity: 0; pointer-events: none;
+  transition: opacity .18s, transform .18s;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* 二次确认 */
+.overlay.center { align-items: center; padding-top: 0; }
+.confirm {
+  width: 404px; max-width: calc(100vw - 40px);
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-xl); box-shadow: var(--shadow-float);
+  overflow: hidden; animation: pop .16s ease;
+}
+.confirm-body { display: flex; gap: 13px; padding: 20px 20px 17px; }
+.confirm-ico {
+  width: 34px; height: 34px; border-radius: 10px; flex: none;
+  display: grid; place-items: center;
+  background: var(--danger-bg); color: var(--danger);
+}
+.confirm h3 { font-size: 14px; font-weight: 600; margin-top: 1px; }
+.confirm p { margin-top: 5px; font-size: 12px; line-height: 1.7; color: var(--text-2); }
+.confirm code {
+  font-family: var(--mono); font-size: 11px; padding: 1px 5px;
+  border: 1px solid var(--line); border-radius: 4px; background: var(--surface-2);
+}
+.confirm-foot {
+  display: flex; justify-content: flex-end; gap: 8px;
+  padding: 12px 16px; border-top: 1px solid var(--line); background: var(--surface-2);
+}
+.btn.danger-solid { background: var(--danger); border-color: var(--danger); color: var(--on-danger); font-weight: 500; }
+.btn.danger-solid:focus-visible { outline-color: var(--danger); }
+.btn.danger-solid:hover:not(:disabled) { background: var(--danger); border-color: var(--danger); filter: brightness(1.06); }
+
+.empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  height: 100%; padding: 28px 18px; text-align: center;
+  font-size: 12px; line-height: 1.7; color: var(--text-3);
+}
+.empty .i { width: 26px; height: 26px; opacity: .5; }
+
+/* ============================================================
+   10. 响应式与动效偏好
+   ============================================================ */
+@media (max-width: 1080px) {
+  .app { grid-template-columns: 216px minmax(0, 1fr); }
+  .content { padding: 14px; }
+  .quick { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .page[data-page="commands"].is-active { grid-template-columns: 272px minmax(0, 1fr); }
+  .page[data-page="shots"].is-active { grid-template-columns: 288px minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<svg class="sprite" aria-hidden="true" focusable="false"><defs>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/></symbol>
+  <symbol id="i-terminal" viewBox="0 0 24 24"><path d="M4.5 7.5l5 4.5-5 4.5"/><path d="M12.5 17h7"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3.5" width="18" height="17" rx="2.6"/><circle cx="8.5" cy="9" r="1.6"/><path d="M21 15.5l-4.6-4.3L5.2 20.4"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.1 14.4a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1.1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1.1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-device" viewBox="0 0 24 24"><rect x="6.5" y="2" width="11" height="20" rx="2.6"/><path d="M10.8 18.2h2.4"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.6l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8L3.5 9.8l5.9-.9z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5.5v13M5.5 12h13"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3.5 6h17M9 6V3.8h6V6M6 6l1 14h10l1-14"/><path d="M10.2 10.5v5.5M13.8 10.5v5.5"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.6l12.4 7.4L7 19.4z"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6.2" y="6.2" width="11.6" height="11.6" rx="2"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7.4A2.4 2.4 0 0 1 5.4 5H9l2 2h7.6A2.4 2.4 0 0 1 21 9.4v7.2A2.4 2.4 0 0 1 18.6 19H5.4A2.4 2.4 0 0 1 3 16.6z"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11.2a8 8 0 1 0-.7 4.3"/><path d="M20 4.5v6.7h-6.7"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.6A8.6 8.6 0 1 1 9.4 4a7 7 0 0 0 10.6 10.6z"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6.5 9.5l5.5 5.5 5.5-5.5"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11.5" height="11.5" rx="2.2"/><path d="M5 15.5V6a2 2 0 0 1 2-2h9.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13.2 2.5L5 13.2h5.2L9 21.5l8.4-11H12z"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M6.6 6.9a8 8 0 1 0 10.8 0"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-7.2 8 7.2v8.2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-recent" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2.6"/></symbol>
+  <symbol id="i-restart" viewBox="0 0 24 24"><path d="M3.2 12a8.8 8.8 0 1 0 3-6.6"/><path d="M3 4.5v6.2h6.2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M4.5 12.5l5 5 10-10.5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4.2M12 17.2h.01"/></symbol>
+  <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.4"/><path d="M6.8 10h.01M10.8 10h.01M14.8 10h.01M17.2 14h-10.4"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4.5 12h14.5M13.5 6l6 6-6 6"/></symbol>
+  <symbol id="i-open" viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-8.5 8.5"/><path d="M18 14.5v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></symbol>
+</defs></svg>
+
+<div class="app">
+  <!-- ================= 侧边栏 ================= -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark"><svg class="i"><use href="#i-device"/></svg></div>
+      <div>
+        <div class="brand-name">ADB Desk</div>
+        <div class="brand-sub">v1.0.0</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="cap">设备</div>
+      <div class="device" id="device">
+        <button class="device-btn" id="deviceBtn" aria-haspopup="listbox" aria-expanded="false">
+          <span class="device-ico"><svg class="i i-14"><use href="#i-device"/></svg></span>
+          <span class="device-txt">
+            <span class="device-model" id="sideModel">Pixel 8 Pro <span class="dot ok"></span></span>
+            <span class="device-serial" id="sideSerial">47251FDH2004KL</span>
+          </span>
+          <svg class="i i-14 chev"><use href="#i-chev"/></svg>
+        </button>
+        <div class="device-menu" id="deviceMenu" role="listbox" aria-label="选择设备"></div>
+      </div>
+    </div>
+
+    <nav class="nav" aria-label="主导航">
+      <button class="nav-item is-active" data-page="overview" aria-current="page">
+        <svg class="i i-14"><use href="#i-grid"/></svg> 概览
+      </button>
+      <button class="nav-item" data-page="commands">
+        <svg class="i i-14"><use href="#i-terminal"/></svg> 命令台
+        <span class="nav-count" id="navCmdCount">13</span>
+      </button>
+      <button class="nav-item" data-page="shots">
+        <svg class="i i-14"><use href="#i-image"/></svg> 截图
+        <span class="nav-count" id="navShotCount">6</span>
+      </button>
+      <button class="nav-item" data-page="settings">
+        <svg class="i i-14"><use href="#i-settings"/></svg> 设置
+      </button>
+    </nav>
+
+    <div class="side-foot">
+      <div class="theme-switch" role="group" aria-label="外观主题">
+        <button data-theme-btn="light" class="on"><svg class="i i-12"><use href="#i-sun"/></svg> 浅色</button>
+        <button data-theme-btn="dark"><svg class="i i-12"><use href="#i-moon"/></svg> 深色</button>
+      </div>
+      <div class="adb-line">
+        <span class="dot ok"></span> adb 35.0.1 · 已就绪
+      </div>
+    </div>
+  </aside>
+
+  <!-- ================= 主区域 ================= -->
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <h1 id="pageTitle">概览</h1>
+        <p id="pageSub">Pixel 8 Pro · 已连接 · Android 14</p>
+      </div>
+      <div class="top-actions">
+        <button class="palette-btn" id="paletteTrigger" aria-label="打开命令面板">
+          <svg class="i i-14"><use href="#i-search"/></svg> 搜索或跳转
+          <kbd>Ctrl K</kbd>
+        </button>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ---------- 概览 ---------- -->
+      <section class="page is-active" data-page="overview">
+        <div class="overview">
+          <div class="hero">
+            <div class="hero-ico"><svg class="i"><use href="#i-device"/></svg></div>
+            <div class="hero-main">
+              <div class="hero-eyebrow">当前设备</div>
+              <h2 id="heroModel">Pixel 8 Pro</h2>
+              <div class="hero-meta">
+                <code id="heroSerial">47251FDH2004KL</code>
+                <span>·</span><span id="heroAndroid">Android 14</span>
+                <span>·</span><span id="heroAbi">arm64-v8a</span>
+              </div>
+              <div class="hero-pills">
+                <span class="pill ok"><span class="dot ok"></span>已连接</span>
+                <span class="pill" id="heroConn">USB</span>
+                <span class="pill mono">sdk 34</span>
+              </div>
+            </div>
+            <div class="hero-actions">
+              <button class="btn ghost" id="refreshDevices">
+                <svg class="i i-14"><use href="#i-refresh"/></svg> 刷新
+              </button>
+              <button class="btn primary" id="heroCapture">
+                <svg class="i i-14"><use href="#i-image"/></svg> 截图
+              </button>
+            </div>
+          </div>
+
+          <div class="sec"><h3>快捷操作</h3><span>一键执行常用指令，结果输出在命令台</span></div>
+          <div class="quick" id="quickActions"></div>
+
+          <div class="cols">
+            <div class="panel">
+              <div class="panel-head">
+                <span class="panel-title">最近截图 <em class="count" id="recentCount">3</em></span>
+                <div class="right">
+                  <button class="btn ghost sm" data-goto="shots">全部 <svg class="i i-12"><use href="#i-arrow"/></svg></button>
+                </div>
+              </div>
+              <div class="recent" id="recentShots"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-head">
+                <span class="panel-title">常用命令</span>
+                <div class="right">
+                  <button class="btn ghost sm" data-goto="commands">管理 <svg class="i i-12"><use href="#i-arrow"/></svg></button>
+                </div>
+              </div>
+              <div class="favs" id="favCommands"></div>
+            </div>
+          </div>
+
+          <div class="panel last-run">
+            <div class="panel-head">
+              <span class="panel-title">最近运行
+                <em class="count" id="lastRunBadge"><span class="dot ok"></span> 退出码 0</em>
+              </span>
+              <div class="right">
+                <span id="lastRunTime" style="font-size:10.5px;color:var(--text-3);font-variant-numeric:tabular-nums;margin-right:2px">0.4s</span>
+                <button class="btn ghost sm" data-goto="commands">查看完整输出
+                  <svg class="i i-12"><use href="#i-arrow"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="last-run-body">
+              <div class="last-cmd" id="lastRunCmd">$ adb -s 47251FDH2004KL shell getprop ro.product.model</div>
+              <div class="last-out" id="lastRunOut">Pixel 8 Pro</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- 命令台 ---------- -->
+      <section class="page" data-page="commands">
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">命令库 <em class="count" id="cmdCount">13</em></span>
+            <div class="right">
+              <button class="btn ghost icon sm" id="newCmdBtn" title="新建命令" aria-label="新建命令">
+                <svg class="i i-14"><use href="#i-plus"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="search">
+            <svg class="i"><use href="#i-search"/></svg>
+            <input id="cmdSearch" type="search" placeholder="搜索命令或指令…" autocomplete="off" />
+          </div>
+          <div class="cmd-list" id="cmdList" role="listbox" aria-label="命令列表"></div>
+          <div class="panel-foot">
+            <span>共 <b id="cmdFiltered">13</b> 条</span>
+            <span class="spacer"></span>
+            <kbd>↑</kbd><kbd>↓</kbd><span>切换</span>
+          </div>
+        </div>
+
+        <div class="stack">
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">命令详情</span>
+              <div class="right">
+                <button class="btn ghost icon sm" id="deleteCmdBtn" title="删除命令" aria-label="删除命令">
+                  <svg class="i i-14"><use href="#i-trash"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="editor-body">
+              <div class="field">
+                <label for="cmdName">名称</label>
+                <input class="input" id="cmdName" placeholder="例如：查看电池状态" />
+              </div>
+              <div class="editor-row row" style="align-items:flex-end">
+                <div class="field">
+                  <label>模式</label>
+                  <div class="seg" id="modeSeg" role="group" aria-label="执行模式">
+                    <button data-mode="shell" class="on">shell</button>
+                    <button data-mode="adb">adb</button>
+                  </div>
+                </div>
+                <div class="field grow">
+                  <label>目标设备</label>
+                  <div class="target" id="editorTarget">47251FDH2004KL</div>
+                </div>
+              </div>
+              <div class="field">
+                <label for="cmdText">命令</label>
+                <textarea class="textarea" id="cmdText" rows="3" spellcheck="false"></textarea>
+                <div class="hint">shell 模式自动拼接 adb shell；adb 模式按原始参数执行</div>
+              </div>
+            </div>
+            <div class="editor-foot">
+              <span class="hint"><svg class="i i-12"><use href="#i-keyboard"/></svg><kbd>Ctrl</kbd><kbd>↵</kbd> 运行</span>
+              <span class="spacer grow"></span>
+              <button class="btn" id="saveCmdBtn">保存</button>
+              <button class="btn primary" id="runBtn">
+                <svg class="i i-12 i-fill"><use href="#i-play"/></svg> 运行
+              </button>
+            </div>
+          </div>
+
+          <div class="panel console-panel">
+            <div class="panel-head">
+              <span class="panel-title">输出</span>
+              <span class="run-state" style="margin-left:6px">
+                <span class="dot" id="runDot"></span><span id="runState">就绪</span>
+                <span id="elapsed" style="color:var(--text-3);font-variant-numeric:tabular-nums"></span>
+              </span>
+              <div class="right">
+                <button class="btn ghost icon sm" id="clearBtn" title="清空输出" aria-label="清空输出">
+                  <svg class="i i-14"><use href="#i-trash"/></svg>
+                </button>
+                <button class="btn icon sm" id="stopBtn" title="停止运行" aria-label="停止运行" disabled>
+                  <svg class="i i-12 i-fill"><use href="#i-stop"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="console" id="console" role="log" aria-live="polite"></div>
+            <div class="console-foot">
+              <span>退出码 <b id="exitCode">—</b></span>
+              <span>行数 <b id="lineCount">0</b></span>
+              <span class="spacer"></span>
+              <button class="btn ghost sm" id="copyBtn">
+                <svg class="i i-12"><use href="#i-copy"/></svg> 复制
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- 截图 ---------- -->
+      <section class="page" data-page="shots">
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">截图 <em class="count" id="shotCount">6</em></span>
+            <div class="right">
+              <button class="btn ghost icon sm" id="openShotsDir" title="打开截图目录" aria-label="打开截图目录">
+                <svg class="i i-14"><use href="#i-folder"/></svg>
+              </button>
+              <button class="btn primary sm" id="captureBtn">
+                <svg class="i i-12"><use href="#i-image"/></svg> 截图
+              </button>
+            </div>
+          </div>
+          <div class="thumbs" id="thumbs"></div>
+          <div class="panel-foot">992 KB ~ 2.4 MB · 存储于图片 / ADB Desk</div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title" style="min-width:0">
+              <span class="shot-name" id="previewTitle" style="font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">—</span>
+            </span>
+            <div class="right">
+              <button class="btn ghost icon sm" id="revealShot" title="在文件夹中显示" aria-label="在文件夹中显示">
+                <svg class="i i-14"><use href="#i-folder"/></svg>
+              </button>
+              <button class="btn ghost icon sm" id="deleteShot" title="删除截图" aria-label="删除截图">
+                <svg class="i i-14"><use href="#i-trash"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="preview" id="preview"></div>
+          <div class="preview-foot" id="previewFoot">
+            <span>1344 × 2992</span><span class="spacer"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- 设置 ---------- -->
+      <section class="page" data-page="settings">
+        <div class="settings">
+          <div class="set-card">
+            <div class="set-head">
+              <h3>adb 环境</h3>
+              <p>未在 PATH 中找到时，可手动指定 adb 可执行文件</p>
+            </div>
+            <div class="set-row">
+              <div class="set-info">
+                <div class="t">连接状态 <span class="pill ok"><span class="dot ok"></span>已就绪</span></div>
+                <div class="d">Android Debug Bridge version 1.0.41 · 平台 35.0.1</div>
+              </div>
+              <div class="set-ctl">
+                <button class="btn sm" id="recheckAdb">
+                  <svg class="i i-12"><use href="#i-refresh"/></svg> 重新检测
+                </button>
+              </div>
+            </div>
+            <div class="set-row">
+              <div class="set-info">
+                <div class="t">adb 路径</div>
+                <div class="d">留空则自动从 PATH、ANDROID_HOME 中查找</div>
+              </div>
+              <div class="set-ctl">
+                <span class="path" title="C:\Android\platform-tools\adb.exe">C:\Android\platform-tools\adb.exe</span>
+                <button class="btn sm" id="pickAdb">选择…</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="set-card">
+            <div class="set-head">
+              <h3>截图存储</h3>
+              <p>截图会以「设备序列号_时间戳.png」命名</p>
+            </div>
+            <div class="set-row">
+              <div class="set-info">
+                <div class="t">保存目录</div>
+                <div class="d">默认保存在系统图片目录下的 ADB Desk 文件夹</div>
+              </div>
+              <div class="set-ctl">
+                <span class="path" title="C:\Users\95289\Pictures\ADB Desk">C:\Users\95289\Pictures\ADB Desk</span>
+                <button class="btn sm" id="pickDir">更改…</button>
+                <button class="btn ghost sm" id="openDir2">
+                  <svg class="i i-12"><use href="#i-folder"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="set-card">
+            <div class="set-head"><h3>外观</h3><p>跟随窗口独立保存，不影响系统主题</p></div>
+            <div class="set-row">
+              <div class="set-info">
+                <div class="t">主题</div>
+                <div class="d">深色模式适合夜间与长时间调试</div>
+              </div>
+              <div class="set-ctl">
+                <div class="seg" id="settingsTheme">
+                  <button data-theme-btn="light" class="on">浅色</button>
+                  <button data-theme-btn="dark">深色</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="set-card">
+            <div class="set-head"><h3>快捷键</h3><p>键盘优先，减少鼠标往返</p></div>
+            <div class="set-row">
+              <div class="set-info"><div class="t">命令面板</div><div class="d">搜索页面与命令，回车跳转</div></div>
+              <div class="set-ctl"><kbd>Ctrl</kbd><kbd>K</kbd></div>
+            </div>
+            <div class="set-row">
+              <div class="set-info"><div class="t">运行当前命令</div><div class="d">在命令台的任意输入框中生效</div></div>
+              <div class="set-ctl"><kbd>Ctrl</kbd><kbd>↵</kbd></div>
+            </div>
+            <div class="set-row">
+              <div class="set-info"><div class="t">关闭浮层</div><div class="d">命令面板与设备菜单</div></div>
+              <div class="set-ctl"><kbd>Esc</kbd></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- 命令面板 -->
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-label="命令面板">
+  <div class="palette">
+    <div class="palette-input">
+      <svg class="i"><use href="#i-search"/></svg>
+      <input id="paletteInput" placeholder="搜索页面、命令…" autocomplete="off" />
+      <kbd>Esc</kbd>
+    </div>
+    <div class="palette-list" id="paletteList"></div>
+    <div class="palette-foot">
+      <span><kbd>↑</kbd><kbd>↓</kbd> 选择</span>
+      <span><kbd>↵</kbd> 打开</span>
+      <span class="sp">ADB Desk · 设计原型</span>
+    </div>
+  </div>
+</div>
+
+<div class="overlay center" id="confirm" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+  <div class="confirm">
+    <div class="confirm-body">
+      <div class="confirm-ico"><svg class="i"><use href="#i-alert"/></svg></div>
+      <div>
+        <h3 id="confirmTitle">重启设备？</h3>
+        <p id="confirmDesc">重启后 adb 连接会短暂中断，需要重新等待设备上线。</p>
+      </div>
+    </div>
+    <div class="confirm-foot">
+      <button class="btn" id="confirmCancel">取消</button>
+      <button class="btn danger-solid" id="confirmOk">重启</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ============================================================
+   数据（模拟 IPC 返回）
+   ============================================================ */
+const DEVICES = [
+  { serial: '47251FDH2004KL', model: 'Pixel 8 Pro', state: 'device', android: '14', abi: 'arm64-v8a', conn: 'USB' },
+  { serial: '192.168.1.42:5555', model: 'Xiaomi 14', state: 'device', android: '14', abi: 'arm64-v8a', conn: '无线调试' },
+  { serial: 'emulator-5554', model: 'Pixel 6 API 34', state: 'offline', android: '13', abi: 'x86_64', conn: '模拟器' }
+];
+
+let CMDS = [
+  { id: 'c1', name: '设备型号', cmd: 'getprop ro.product.model', mode: 'shell', favorite: true },
+  { id: 'c2', name: '系统版本', cmd: 'getprop ro.build.version.release', mode: 'shell', favorite: true },
+  { id: 'c3', name: '电源键（锁屏/唤醒）', cmd: 'input keyevent 26', mode: 'shell', favorite: true },
+  { id: 'c4', name: '电池信息', cmd: 'dumpsys battery', mode: 'shell', favorite: false },
+  { id: 'c5', name: '屏幕分辨率', cmd: 'wm size', mode: 'shell', favorite: true },
+  { id: 'c6', name: '当前前台 Activity', cmd: 'dumpsys activity activities | grep -E "mResumedActivity|topResumedActivity"', mode: 'shell', favorite: false },
+  { id: 'c7', name: '已安装第三方应用', cmd: 'pm list packages -3', mode: 'shell', favorite: false },
+  { id: 'c8', name: '内存占用', cmd: 'cat /proc/meminfo | head -n 5', mode: 'shell', favorite: false },
+  { id: 'c9', name: '返回键', cmd: 'input keyevent 4', mode: 'shell', favorite: false },
+  { id: 'c10', name: 'Home 键', cmd: 'input keyevent 3', mode: 'shell', favorite: false },
+  { id: 'c11', name: '最近任务', cmd: 'input keyevent 187', mode: 'shell', favorite: false },
+  { id: 'c12', name: '列出设备', cmd: 'devices -l', mode: 'adb', favorite: false },
+  { id: 'c13', name: '重启设备', cmd: 'reboot', mode: 'adb', favorite: false }
+];
+
+const OUTPUTS = {
+  '设备型号': [['out', 'Pixel 8 Pro']],
+  '系统版本': [['out', '14']],
+  '电源键（锁屏/唤醒）': [],
+  '电池信息': [
+    ['out', 'Current Battery Service state:'],
+    ['out', '  AC powered: false'],
+    ['out', '  USB powered: true'],
+    ['out', '  Wireless powered: false'],
+    ['out', '  status: 2'],
+    ['out', '  health: 2'],
+    ['out', '  level: 87'],
+    ['out', '  scale: 100'],
+    ['out', '  voltage: 4382'],
+    ['out', '  temperature: 302']
+  ],
+  '屏幕分辨率': [['out', 'Physical size: 1344x2992']],
+  '当前前台 Activity': [
+    ['out', '  mResumedActivity: ActivityRecord{8f2a1c u0 com.android.settings/.Settings t128}'],
+    ['out', '  topResumedActivity: ActivityRecord{8f2a1c u0 com.android.settings/.Settings t128}']
+  ],
+  '已安装第三方应用': [
+    ['out', 'package:com.android.chrome'],
+    ['out', 'package:com.google.android.apps.photos'],
+    ['out', 'package:com.tencent.mobileqq'],
+    ['out', 'package:com.tencent.mm'],
+    ['out', 'package:com.xingin.xhs'],
+    ['out', 'package:com.zhihu.android']
+  ],
+  '内存占用': [
+    ['out', 'MemTotal:        7,812,344 kB'],
+    ['out', 'MemFree:           412,908 kB'],
+    ['out', 'MemAvailable:    2,184,552 kB'],
+    ['out', 'Buffers:            28,416 kB'],
+    ['out', 'Cached:          1,904,320 kB']
+  ],
+  '返回键': [],
+  'Home 键': [],
+  '最近任务': [],
+  '列出设备': [
+    ['out', 'List of devices attached'],
+    ['out', '47251FDH2004KL        device product:husky model:Pixel_8_Pro device:husky transport_id:1'],
+    ['out', '192.168.1.42:5555     device product:nuwa model:2405CPX3DC device:nuwa transport_id:3']
+  ],
+  '重启设备': [['dim', '正在重启设备…'], ['out', '']]
+};
+
+const SHOT_PRESETS = [
+  { title: '天气', c1: '#0e7490', c2: '#164e63' },
+  { title: '相册', c1: '#7c3aed', c2: '#db2777' },
+  { title: '正在播放', c1: '#1f2937', c2: '#4b5563' },
+  { title: '阅读', c1: '#b45309', c2: '#78350f' },
+  { title: '地图', c1: '#15803d', c2: '#065f46' },
+  { title: '设置', c1: '#1e3a8a', c2: '#0f172a' }
+];
+
+let SHOTS = [
+  { id: 's1', name: 'Pixel_8_Pro_20261023_094512.png', size: 2442711, ts: Date.now() - 1000 * 60 * 42, preset: 0 },
+  { id: 's2', name: 'Pixel_8_Pro_20261023_093120.png', size: 1904488, ts: Date.now() - 1000 * 60 * 96, preset: 1 },
+  { id: 's3', name: 'Pixel_8_Pro_20261022_221504.png', size: 1322110, ts: Date.now() - 1000 * 60 * 60 * 12, preset: 2 },
+  { id: 's4', name: 'Xiaomi_14_20261022_180233.png', size: 2102334, ts: Date.now() - 1000 * 60 * 60 * 16, preset: 3 },
+  { id: 's5', name: 'Pixel_8_Pro_20261022_104918.png', size: 1015772, ts: Date.now() - 1000 * 60 * 60 * 23, preset: 4 },
+  { id: 's6', name: 'emulator-5554_20261021_152240.png', size: 998412, ts: Date.now() - 1000 * 60 * 60 * 34, preset: 5 }
+];
+
+/* ============================================================
+   工具函数
+   ============================================================ */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const pad = (n) => String(n).padStart(2, '0');
+
+const fmtSize = (b) => b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.round(b / 1024) + ' KB';
+const fmtTime = (ts) => {
+  const d = new Date(ts);
+  return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+function shotUrl(preset) {
+  const p = SHOT_PRESETS[preset % SHOT_PRESETS.length];
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="360" height="780" viewBox="0 0 360 780">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+  <stop offset="0" stop-color="${p.c1}"/><stop offset="1" stop-color="${p.c2}"/></linearGradient></defs>
+  <rect width="360" height="780" fill="url(#g)"/>
+  <text x="24" y="31" font-family="system-ui,sans-serif" font-size="13" fill="#fff" opacity=".92">9:41</text>
+  <g fill="#fff" opacity=".85"><rect x="282" y="22" width="18" height="9" rx="3" opacity=".6"/><circle cx="316" cy="26" r="4"/></g>
+  <text x="24" y="120" font-family="system-ui,sans-serif" font-size="30" font-weight="700" fill="#fff">${p.title}</text>
+  <rect x="24" y="142" width="182" height="10" rx="5" fill="#fff" opacity=".34"/>
+  <rect x="24" y="188" width="312" height="122" rx="20" fill="#fff" opacity=".16"/>
+  <rect x="24" y="326" width="150" height="98" rx="18" fill="#fff" opacity=".13"/>
+  <rect x="186" y="326" width="150" height="98" rx="18" fill="#fff" opacity=".13"/>
+  <rect x="24" y="440" width="312" height="72" rx="18" fill="#fff" opacity=".1"/>
+  <rect x="24" y="526" width="312" height="72" rx="18" fill="#fff" opacity=".1"/>
+  <rect x="24" y="700" width="312" height="52" rx="26" fill="#000" opacity=".22"/>
+  <g fill="#fff" opacity=".8"><circle cx="72" cy="726" r="7"/><circle cx="140" cy="726" r="7"/><circle cx="208" cy="726" r="7"/><circle cx="276" cy="726" r="7"/></g>
+  </svg>`;
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+
+const toastEl = $('#toast');
+let toastTimer = null;
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+}
+
+/* ============================================================
+   状态
+   ============================================================ */
+const state = {
+  page: 'overview',
+  deviceSerial: '47251FDH2004KL',
+  activeCmd: 'c1',
+  mode: 'shell',
+  filter: '',
+  activeShot: 's1',
+  running: false,
+  stopTimer: null,
+  uiTimer: null,
+  startedAt: 0,
+  paletteOpen: false,
+  paletteIndex: 0
+};
+
+const currentDevice = () => DEVICES.find((d) => d.serial === state.deviceSerial) || DEVICES[0];
+const pageMeta = {
+  overview: () => ({ title: '概览', sub: `${currentDevice().model} · ${currentDevice().state === 'device' ? '已连接' : '离线'} · Android ${currentDevice().android}` }),
+  commands: () => ({ title: '命令台', sub: '保存常用 adb 指令，运行并实时查看输出' }),
+  shots: () => ({ title: '截图', sub: '抓取设备屏幕，集中管理与预览' }),
+  settings: () => ({ title: '设置', sub: 'adb 路径、存储位置与外观' })
+};
+
+/* ============================================================
+   渲染：设备
+   ============================================================ */
+function renderDevice() {
+  const d = currentDevice();
+  const online = d.state === 'device';
+  $('#sideModel').innerHTML = `${d.model} <span class="dot ${online ? 'ok' : 'err'}"></span>`;
+  $('#sideSerial').textContent = d.serial;
+  $('#heroModel').textContent = d.model;
+  $('#heroSerial').textContent = d.serial;
+  $('#heroAndroid').textContent = 'Android ' + d.android;
+  $('#heroAbi').textContent = d.abi;
+  $('#heroConn').textContent = d.conn;
+  $('#editorTarget').textContent = d.serial;
+
+  const heroPill = $('.hero-pills .pill');
+  heroPill.className = 'pill ' + (online ? 'ok' : 'bad');
+  heroPill.innerHTML = `<span class="dot ${online ? 'ok' : 'err'}"></span>${online ? '已连接' : '离线'}`;
+  $('#heroCapture').disabled = !online;
+  $('#runBtn').disabled = !online || state.running;
+  $('#captureBtn').disabled = !online;
+  $$('#quickActions button').forEach((b) => (b.disabled = !online));
+
+  const menu = $('#deviceMenu');
+  menu.innerHTML = '';
+  DEVICES.forEach((item) => {
+    const b = document.createElement('button');
+    b.className = 'device-item' + (item.serial === d.serial ? ' is-current' : '');
+    b.setAttribute('role', 'option');
+    b.setAttribute('aria-selected', item.serial === d.serial ? 'true' : 'false');
+    b.innerHTML = `<span class="dot ${item.state === 'device' ? 'ok' : 'err'}"></span>
+      <span class="m"><span class="n">${item.model}</span><span class="s">${item.serial}</span></span>
+      ${item.serial === d.serial ? '<svg class="i i-12"><use href="#i-check"/></svg>' : ''}`;
+    b.addEventListener('click', () => {
+      state.deviceSerial = item.serial;
+      closeDeviceMenu();
+      renderDevice();
+      updateHeader();
+      toast(`已切换到 ${item.model}${item.state !== 'device' ? '（离线）' : ''}`);
+    });
+    menu.appendChild(b);
+  });
+  const sep = document.createElement('div');
+  sep.className = 'device-sep';
+  menu.appendChild(sep);
+  const refresh = document.createElement('button');
+  refresh.className = 'device-refresh';
+  refresh.innerHTML = '<svg class="i i-12"><use href="#i-refresh"/></svg> 刷新设备列表';
+  refresh.addEventListener('click', () => {
+    closeDeviceMenu();
+    toast('设备列表已刷新');
+  });
+  menu.appendChild(refresh);
+}
+
+function openDeviceMenu() {
+  $('#device').classList.add('open');
+  $('#deviceBtn').setAttribute('aria-expanded', 'true');
+}
+function closeDeviceMenu() {
+  $('#device').classList.remove('open');
+  $('#deviceBtn').setAttribute('aria-expanded', 'false');
+}
+
+/* ============================================================
+   渲染：导航与页面
+   ============================================================ */
+function updateHeader() {
+  const meta = pageMeta[state.page]();
+  $('#pageTitle').textContent = meta.title;
+  $('#pageSub').textContent = meta.sub;
+}
+
+function switchPage(page) {
+  state.page = page;
+  $$('.page').forEach((el) => el.classList.toggle('is-active', el.dataset.page === page));
+  $$('.nav-item').forEach((el) => {
+    const on = el.dataset.page === page;
+    el.classList.toggle('is-active', on);
+    if (on) el.setAttribute('aria-current', 'page');
+    else el.removeAttribute('aria-current');
+  });
+  updateHeader();
+}
+
+function countNav() {
+  $('#navCmdCount').textContent = CMDS.length;
+  $('#cmdCount').textContent = CMDS.length;
+  $('#navShotCount').textContent = SHOTS.length;
+  $('#shotCount').textContent = SHOTS.length;
+}
+
+/* ============================================================
+   渲染：命令
+   ============================================================ */
+function sortedCommands() {
+  return [...CMDS].sort((a, b) => Number(b.favorite) - Number(a.favorite));
+}
+
+function renderCommands() {
+  const list = $('#cmdList');
+  const kw = state.filter.trim().toLowerCase();
+  const items = sortedCommands().filter(
+    (c) => !kw || c.name.toLowerCase().includes(kw) || c.cmd.toLowerCase().includes(kw)
+  );
+  $('#cmdFiltered').textContent = items.length;
+  list.innerHTML = '';
+
+  if (!items.length) {
+    list.innerHTML = '<div class="empty" style="height:auto;padding:36px 12px"><svg class="i"><use href="#i-search"/></svg><span>没有匹配的命令<br>试试其他关键词</span></div>';
+    return;
+  }
+
+  items.forEach((c) => {
+    const row = document.createElement('div');
+    row.className = 'cmd' + (c.id === state.activeCmd ? ' is-active' : '');
+    row.setAttribute('role', 'option');
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('aria-selected', c.id === state.activeCmd ? 'true' : 'false');
+    row.innerHTML = `
+      <span class="cmd-top">
+        <span class="cmd-name">${escapeHtml(c.name)}</span>
+        <span class="pill mono">${c.mode}</span>
+        <button class="star-btn ${c.favorite ? 'on' : ''}" title="${c.favorite ? '取消收藏' : '收藏'}" aria-label="收藏">
+          <svg class="i"><use href="#i-star"/></svg>
+        </button>
+      </span>
+      <span class="cmd-code">${escapeHtml(c.cmd)}</span>`;
+
+    row.addEventListener('click', (e) => {
+      if (e.target.closest('.star-btn')) {
+        c.favorite = !c.favorite;
+        renderCommands();
+        renderFavorites();
+        toast(c.favorite ? '已加入常用命令' : '已取消收藏');
+        return;
+      }
+      selectCommand(c.id);
+    });
+    row.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        selectCommand(c.id);
+      }
+    });
+    list.appendChild(row);
+  });
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+}
+
+function selectCommand(id) {
+  const c = CMDS.find((x) => x.id === id);
+  if (!c) return;
+  state.activeCmd = id;
+  state.mode = c.mode;
+  $('#cmdName').value = c.name;
+  $('#cmdText').value = c.cmd;
+  $$('#modeSeg button').forEach((b) => b.classList.toggle('on', b.dataset.mode === c.mode));
+  renderCommands();
+}
+
+function renderFavorites() {
+  const box = $('#favCommands');
+  const favs = sortedCommands().filter((c) => c.favorite).slice(0, 5);
+  box.innerHTML = '';
+  if (!favs.length) {
+    box.innerHTML = '<div class="empty" style="height:120px">还没有收藏的命令<br>在命令库中点击星标</div>';
+    return;
+  }
+  favs.forEach((c) => {
+    const b = document.createElement('button');
+    b.className = 'fav-row';
+    b.innerHTML = `<svg class="i star"><use href="#i-star"/></svg>
+      <span class="fn">${escapeHtml(c.name)}</span>
+      <span class="fc">${escapeHtml(c.cmd)}</span>
+      <svg class="i i-12 go"><use href="#i-play"/></svg>`;
+    b.addEventListener('click', () => {
+      selectCommand(c.id);
+      switchPage('commands');
+    });
+    box.appendChild(b);
+  });
+}
+
+/* ============================================================
+   渲染：快捷操作
+   ============================================================ */
+const QUICK = [
+  { label: '屏幕截图', sub: 'screencap -p', icon: 'i-image', action: 'shot' },
+  { label: '锁屏 / 唤醒', sub: 'input keyevent 26', icon: 'i-power', cmdName: '电源键（锁屏/唤醒）' },
+  { label: '返回键', sub: 'input keyevent 4', icon: 'i-back', cmdName: '返回键' },
+  { label: 'Home 键', sub: 'input keyevent 3', icon: 'i-home', cmdName: 'Home 键' },
+  { label: '最近任务', sub: 'input keyevent 187', icon: 'i-recent', cmdName: '最近任务' },
+  { label: '重启设备', sub: 'adb reboot', icon: 'i-restart', cmdName: '重启设备' }
+];
+
+function renderQuick() {
+  const box = $('#quickActions');
+  box.innerHTML = '';
+  QUICK.forEach((q) => {
+    const b = document.createElement('button');
+    b.innerHTML = `<span class="qi"><svg class="i i-14"><use href="#${q.icon}"/></svg></span>
+      <span class="qt"><span class="ql">${q.label}</span><span class="qc">${q.sub}</span></span>`;
+    b.disabled = currentDevice().state !== 'device';
+    b.addEventListener('click', () => {
+      if (q.action === 'shot') {
+        captureShot();
+        return;
+      }
+      const openEditor = () => {
+        const c = CMDS.find((x) => x.name === q.cmdName);
+        if (!c) return;
+        selectCommand(c.id);
+        switchPage('commands');
+        setTimeout(runCommand, 120);
+      };
+      if (q.cmdName === '重启设备') {
+        askConfirm(
+          '重启设备？',
+          `目标设备 <code>${currentDevice().model}</code> 将立即重启，adb 连接会短暂中断，需要重新等待设备上线。`,
+          '重启',
+          openEditor
+        );
+        return;
+      }
+      openEditor();
+    });
+    box.appendChild(b);
+  });
+}
+
+/* ============================================================
+   渲染：截图
+   ============================================================ */
+function renderShots() {
+  const box = $('#thumbs');
+  box.innerHTML = '';
+  if (!SHOTS.length) {
+    box.innerHTML = '<div class="empty" style="grid-column:1/-1"><svg class="i"><use href="#i-image"/></svg><span>还没有截图<br>点击右上角「截图」抓取当前屏幕</span></div>';
+    renderPreview();
+    countNav();
+    return;
+  }
+  SHOTS.forEach((s) => {
+    const b = document.createElement('div');
+    b.className = 'thumb' + (s.id === state.activeShot ? ' is-active' : '');
+    b.setAttribute('role', 'button');
+    b.setAttribute('tabindex', '0');
+    b.setAttribute('aria-label', s.name);
+    b.innerHTML = `<img src="${shotUrl(s.preset)}" alt="" loading="lazy" />
+      <span class="tm">${fmtTime(s.ts)} · ${fmtSize(s.size)}</span>
+      <button class="del" aria-label="删除截图" title="删除"><svg class="i"><use href="#i-x"/></svg></button>`;
+    b.addEventListener('click', (e) => {
+      if (e.target.closest('.del')) {
+        e.stopPropagation();
+        deleteShot(s.id);
+        return;
+      }
+      state.activeShot = s.id;
+      renderShots();
+    });
+    b.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        state.activeShot = s.id;
+        renderShots();
+      }
+    });
+    box.appendChild(b);
+  });
+  renderPreview();
+  renderRecent();
+  countNav();
+}
+
+function renderPreview() {
+  const s = SHOTS.find((x) => x.id === state.activeShot) || SHOTS[0];
+  const preview = $('#preview');
+  if (!s) {
+    preview.innerHTML = '<div class="empty"><svg class="i"><use href="#i-image"/></svg><span>暂无截图</span></div>';
+    $('#previewTitle').textContent = '—';
+    $('#previewFoot').innerHTML = '<span>—</span>';
+    return;
+  }
+  state.activeShot = s.id;
+  preview.innerHTML = `<img src="${shotUrl(s.preset)}" alt="${s.name}" />`;
+  $('#previewTitle').textContent = s.name;
+  $('#previewTitle').title = s.name;
+  $('#previewFoot').innerHTML = `
+    <span>1344 × 2992</span>
+    <span>${fmtSize(s.size)}</span>
+    <span>${new Date(s.ts).toLocaleString('zh-CN', { hour12: false })}</span>
+    <span class="spacer"></span>
+    <span>PNG</span>`;
+}
+
+function renderRecent() {
+  const box = $('#recentShots');
+  const items = SHOTS.slice(0, 3);
+  $('#recentCount').textContent = Math.min(3, SHOTS.length);
+  box.innerHTML = '';
+  items.forEach((s) => {
+    const b = document.createElement('button');
+    b.innerHTML = `<img src="${shotUrl(s.preset)}" alt="${s.name}" /><span class="rm">${fmtTime(s.ts)} · ${fmtSize(s.size)}</span>`;
+    b.addEventListener('click', () => {
+      state.activeShot = s.id;
+      switchPage('shots');
+      renderShots();
+    });
+    box.appendChild(b);
+  });
+}
+
+function captureShot() {
+  const d = currentDevice();
+  if (d.state !== 'device') {
+    toast('设备离线，无法截图');
+    return;
+  }
+  const btn = $('#captureBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="dot run"></span> 截图中…';
+  setTimeout(() => {
+    const now = Date.now();
+    const dt = new Date(now);
+    const stamp = `${dt.getFullYear()}${pad(dt.getMonth() + 1)}${pad(dt.getDate())}_${pad(dt.getHours())}${pad(dt.getMinutes())}${pad(dt.getSeconds())}`;
+    const shot = {
+      id: 's' + now,
+      name: `${d.model.replace(/\s+/g, '_')}_${stamp}.png`,
+      size: 1200000 + Math.round(Math.random() * 1200000),
+      ts: now,
+      preset: Math.floor(Math.random() * SHOT_PRESETS.length)
+    };
+    SHOTS.unshift(shot);
+    state.activeShot = shot.id;
+    renderShots();
+    btn.innerHTML = '<svg class="i i-12"><use href="#i-image"/></svg> 截图';
+    btn.disabled = false;
+    toast('已保存：' + shot.name);
+  }, 720);
+}
+
+function deleteShot(id) {
+  const i = SHOTS.findIndex((s) => s.id === id);
+  if (i < 0) return;
+  const [removed] = SHOTS.splice(i, 1);
+  if (state.activeShot === id) state.activeShot = SHOTS[0] ? SHOTS[0].id : null;
+  renderShots();
+  toast('已删除 ' + removed.name);
+}
+
+/* ============================================================
+   运行命令（模拟流式输出）
+   ============================================================ */
+const consoleEl = $('#console');
+let lineCount = 0;
+let currentRunCmd = '';
+let runOutputLines = [];
+
+function pushLine(kind, text) {
+  const div = document.createElement('div');
+  div.className = 'ln' + (kind && kind !== 'out' ? ' ' + kind : '');
+  div.textContent = text;
+  consoleEl.appendChild(div);
+  consoleEl.scrollTop = consoleEl.scrollHeight;
+  lineCount++;
+  $('#lineCount').textContent = lineCount;
+}
+
+function setRunState(mode, text) {
+  const dot = $('#runDot');
+  dot.className = 'dot' + (mode === 'run' ? ' run' : mode === 'ok' ? ' ok' : mode === 'err' ? ' err' : '');
+  $('#runState').textContent = text;
+}
+
+function runCommand() {
+  if (state.running) return;
+  const cmd = $('#cmdText').value.trim();
+  if (!cmd) {
+    toast('命令内容为空');
+    return;
+  }
+  const d = currentDevice();
+  if (d.state !== 'device') {
+    toast('设备离线，无法执行');
+    return;
+  }
+
+  const name = $('#cmdName').value.trim();
+  const serial = d.serial;
+  const mode = state.mode;
+
+  state.running = true;
+  state.startedAt = Date.now();
+  lineCount = 0;
+  runOutputLines = [];
+  consoleEl.innerHTML = '';
+  $('#lineCount').textContent = '0';
+  $('#exitCode').textContent = '—';
+  $('#runBtn').disabled = true;
+  $('#stopBtn').disabled = false;
+  setRunState('run', '运行中');
+
+  currentRunCmd = `$ adb ${mode === 'shell' ? `-s ${serial} shell ` : `-s ${serial} `}${cmd}`;
+  pushLine('cmd', currentRunCmd);
+  pushLine('dim', `# 目标设备 ${d.model} · ${serial}`);
+
+  state.uiTimer = setInterval(() => {
+    $('#elapsed').textContent = ((Date.now() - state.startedAt) / 1000).toFixed(1) + 's';
+  }, 100);
+
+  const lines = OUTPUTS[name] !== undefined ? OUTPUTS[name] : [['out', '(命令已执行，无输出)']];
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let i = 0;
+
+  const step = () => {
+    if (i >= lines.length) {
+      finish(0);
+      return;
+    }
+    const [kind, text] = lines[i];
+    if (text === '' && kind === 'out') {
+      i++;
+      step();
+      return;
+    }
+    pushLine(kind, text);
+    if (kind !== 'dim') runOutputLines.push(text);
+    i++;
+    state.stopTimer = setTimeout(step, reduce ? 0 : 180 + Math.random() * 120);
+  };
+
+  pushLine('dim', '');
+  state.stopTimer = setTimeout(step, reduce ? 0 : 320);
+}
+
+function finish(code) {
+  clearTimeout(state.stopTimer);
+  clearInterval(state.uiTimer);
+  state.running = false;
+  const total = ((Date.now() - state.startedAt) / 1000).toFixed(1);
+  $('#elapsed').textContent = total + 's';
+  $('#exitCode').textContent = String(code);
+  $('#runBtn').disabled = currentDevice().state !== 'device';
+  $('#stopBtn').disabled = true;
+  if (code === 0) {
+    setRunState('ok', '完成');
+    pushLine('dim', `# 进程已退出，耗时 ${total}s`);
+  } else {
+    setRunState('err', '已中止');
+    pushLine('err', `# 进程被中断，退出码 ${code}`);
+  }
+  updateLastRun(code, total);
+}
+
+function updateLastRun(code, total) {
+  $('#lastRunCmd').textContent = currentRunCmd || '$ adb devices -l';
+  $('#lastRunTime').textContent = total + 's';
+  $('#lastRunBadge').innerHTML = `<span class="dot ${code === 0 ? 'ok' : 'err'}"></span> 退出码 ${code}`;
+  const out = runOutputLines.filter((t) => t.trim()).slice(0, 4).join('\n');
+  $('#lastRunOut').textContent = out || '(无输出)';
+  $('#lastRunOut').className = 'last-out' + (out ? '' : ' dim');
+}
+
+function stopRun() {
+  if (!state.running) return;
+  clearTimeout(state.stopTimer);
+  clearInterval(state.uiTimer);
+  pushLine('err', '^C');
+  finish(130);
+  toast('已停止当前进程');
+}
+
+/* ============================================================
+   二次确认
+   ============================================================ */
+let confirmHandler = null;
+
+function askConfirm(title, descHtml, okText, onOk) {
+  $('#confirmTitle').textContent = title;
+  $('#confirmDesc').innerHTML = descHtml;
+  $('#confirmOk').textContent = okText;
+  confirmHandler = onOk;
+  $('#confirm').classList.add('open');
+  setTimeout(() => $('#confirmCancel').focus(), 20);
+}
+
+function closeConfirm() {
+  $('#confirm').classList.remove('open');
+  confirmHandler = null;
+}
+
+/* ============================================================
+   命令面板
+   ============================================================ */
+function paletteItems() {
+  const pages = [
+    { kind: '页面', label: '概览', hint: 'overview', icon: 'i-grid', run: () => switchPage('overview') },
+    { kind: '页面', label: '命令台', hint: 'commands', icon: 'i-terminal', run: () => switchPage('commands') },
+    { kind: '页面', label: '截图', hint: 'shots', icon: 'i-image', run: () => switchPage('shots') },
+    { kind: '页面', label: '设置', hint: 'settings', icon: 'i-settings', run: () => switchPage('settings') }
+  ];
+  const cmds = sortedCommands().map((c) => ({
+    kind: '命令',
+    label: c.name,
+    hint: c.mode,
+    icon: 'i-play',
+    run: () => {
+      selectCommand(c.id);
+      switchPage('commands');
+    }
+  }));
+  return [...pages, ...cmds];
+}
+
+function renderPalette() {
+  const kw = $('#paletteInput').value.trim().toLowerCase();
+  const items = paletteItems().filter((it) => !kw || it.label.toLowerCase().includes(kw) || (it.hint || '').toLowerCase().includes(kw));
+  const list = $('#paletteList');
+  list.innerHTML = '';
+  if (!items.length) {
+    list.innerHTML = '<div class="p-empty">没有匹配结果</div>';
+    return;
+  }
+  state.paletteIndex = Math.min(state.paletteIndex, items.length - 1);
+  let lastKind = '';
+  items.forEach((it, idx) => {
+    if (it.kind !== lastKind) {
+      lastKind = it.kind;
+      const g = document.createElement('div');
+      g.className = 'p-group';
+      g.textContent = it.kind;
+      list.appendChild(g);
+    }
+    const b = document.createElement('button');
+    b.className = 'p-row' + (idx === state.paletteIndex ? ' on' : '');
+    b.innerHTML = `<svg class="i i-14"><use href="#${it.icon}"/></svg>
+      <span class="pt">${escapeHtml(it.label)}</span>
+      <span class="pk">${escapeHtml(it.hint || '')}</span>`;
+    b.addEventListener('click', () => {
+      closePalette();
+      it.run();
+    });
+    list.appendChild(b);
+  });
+  state.paletteData = items;
+}
+
+function openPalette() {
+  state.paletteOpen = true;
+  state.paletteIndex = 0;
+  $('#overlay').classList.add('open');
+  const input = $('#paletteInput');
+  input.value = '';
+  renderPalette();
+  setTimeout(() => input.focus(), 10);
+}
+
+function closePalette() {
+  state.paletteOpen = false;
+  $('#overlay').classList.remove('open');
+}
+
+/* ============================================================
+   主题
+   ============================================================ */
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  $$('[data-theme-btn]').forEach((b) => {
+    const on = b.dataset.themeBtn === theme;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+}
+
+/* ============================================================
+   事件绑定
+   ============================================================ */
+function bind() {
+  $$('.nav-item').forEach((el) => el.addEventListener('click', () => switchPage(el.dataset.page)));
+  $$('[data-goto]').forEach((el) => el.addEventListener('click', () => switchPage(el.dataset.goto)));
+
+  $('#deviceBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if ($('#device').classList.contains('open')) closeDeviceMenu();
+    else openDeviceMenu();
+  });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#device')) closeDeviceMenu();
+  });
+
+  $$('[data-theme-btn]').forEach((b) => {
+    b.addEventListener('click', () => {
+      applyTheme(b.dataset.themeBtn);
+      toast(b.dataset.themeBtn === 'dark' ? '已切换到深色模式' : '已切换到浅色模式');
+    });
+  });
+
+  $('#cmdSearch').addEventListener('input', (e) => {
+    state.filter = e.target.value;
+    renderCommands();
+  });
+
+  $('#modeSeg').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-mode]');
+    if (!b) return;
+    state.mode = b.dataset.mode;
+    $$('#modeSeg button').forEach((x) => x.classList.toggle('on', x === b));
+  });
+
+  $('#runBtn').addEventListener('click', runCommand);
+  $('#stopBtn').addEventListener('click', stopRun);
+  $('#clearBtn').addEventListener('click', () => {
+    consoleEl.innerHTML = '';
+    lineCount = 0;
+    $('#lineCount').textContent = '0';
+    $('#exitCode').textContent = '—';
+    setRunState('', '就绪');
+    $('#elapsed').textContent = '';
+  });
+  $('#copyBtn').addEventListener('click', () => {
+    const text = consoleEl.innerText;
+    if (!text.trim()) return toast('暂无输出可复制');
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast('输出已复制')).catch(() => toast('复制失败'));
+    else toast('当前环境不支持剪贴板');
+  });
+
+  $('#saveCmdBtn').addEventListener('click', () => {
+    const name = $('#cmdName').value.trim();
+    const cmd = $('#cmdText').value.trim();
+    if (!name || !cmd) return toast('名称和命令不能为空');
+    const c = CMDS.find((x) => x.id === state.activeCmd);
+    if (c) {
+      c.name = name;
+      c.cmd = cmd;
+      c.mode = state.mode;
+    } else {
+      const id = 'c' + Date.now();
+      CMDS.push({ id, name, cmd, mode: state.mode, favorite: false });
+      state.activeCmd = id;
+    }
+    renderCommands();
+    renderFavorites();
+    countNav();
+    toast('命令已保存');
+  });
+
+  $('#deleteCmdBtn').addEventListener('click', () => {
+    const i = CMDS.findIndex((x) => x.id === state.activeCmd);
+    if (i < 0) return toast('请先选择一条命令');
+    CMDS.splice(i, 1);
+    state.activeCmd = CMDS[0] ? CMDS[0].id : null;
+    if (state.activeCmd) selectCommand(state.activeCmd);
+    else {
+      $('#cmdName').value = '';
+      $('#cmdText').value = '';
+    }
+    renderCommands();
+    renderFavorites();
+    countNav();
+    toast('命令已删除');
+  });
+
+  $('#newCmdBtn').addEventListener('click', () => {
+    state.activeCmd = null;
+    $('#cmdName').value = '';
+    $('#cmdText').value = '';
+    state.mode = 'shell';
+    $$('#modeSeg button').forEach((b) => b.classList.toggle('on', b.dataset.mode === 'shell'));
+    renderCommands();
+    $('#cmdName').focus();
+  });
+
+  $('#captureBtn').addEventListener('click', captureShot);
+  $('#heroCapture').addEventListener('click', () => {
+    captureShot();
+    setTimeout(() => switchPage('shots'), 800);
+  });
+  $('#openShotsDir').addEventListener('click', () => toast('已打开截图目录'));
+  $('#openDir2').addEventListener('click', () => toast('已打开截图目录'));
+  $('#revealShot').addEventListener('click', () => toast('已在文件夹中显示'));
+  $('#deleteShot').addEventListener('click', () => {
+    if (!state.activeShot) return toast('没有可删除的截图');
+    deleteShot(state.activeShot);
+  });
+  $('#refreshDevices').addEventListener('click', () => toast('设备列表已刷新'));
+  $('#recheckAdb').addEventListener('click', () => toast('adb 检测完成 · 35.0.1'));
+  $('#pickAdb').addEventListener('click', () => toast('打开文件选择对话框（系统原生）'));
+  $('#pickDir').addEventListener('click', () => toast('打开目录选择对话框（系统原生）'));
+
+  $('#paletteTrigger').addEventListener('click', openPalette);
+  $('#overlay').addEventListener('click', (e) => {
+    if (e.target === $('#overlay')) closePalette();
+  });
+
+  $('#confirmCancel').addEventListener('click', closeConfirm);
+  $('#confirm').addEventListener('click', (e) => {
+    if (e.target === $('#confirm')) closeConfirm();
+  });
+  $('#confirmOk').addEventListener('click', () => {
+    const fn = confirmHandler;
+    closeConfirm();
+    if (fn) fn();
+  });
+  $('#paletteInput').addEventListener('input', () => {
+    state.paletteIndex = 0;
+    renderPalette();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    const mod = e.ctrlKey || e.metaKey;
+    if (mod && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      state.paletteOpen ? closePalette() : openPalette();
+      return;
+    }
+    if (e.key === 'Escape') {
+      if ($('#confirm').classList.contains('open')) closeConfirm();
+      else if (state.paletteOpen) closePalette();
+      else closeDeviceMenu();
+      return;
+    }
+    if (mod && e.key === 'Enter') {
+      e.preventDefault();
+      if (state.page === 'commands') runCommand();
+      return;
+    }
+    if (!state.paletteOpen) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const items = state.paletteData || [];
+      if (!items.length) return;
+      const dir = e.key === 'ArrowDown' ? 1 : -1;
+      state.paletteIndex = (state.paletteIndex + dir + items.length) % items.length;
+      renderPalette();
+    }
+    if (e.key === 'Enter') {
+      const item = (state.paletteData || [])[state.paletteIndex];
+      if (item) {
+        closePalette();
+        item.run();
+      }
+    }
+  });
+}
+
+/* ============================================================
+   初始化
+   ============================================================ */
+function init() {
+  applyTheme('light');
+  bind();
+  renderDevice();
+  renderQuick();
+  renderCommands();
+  renderFavorites();
+  renderShots();
+  countNav();
+  updateHeader();
+  selectCommand('c1');
+  // 预置一段输出，便于首屏评审
+  pushLine('cmd', '$ adb -s 47251FDH2004KL shell getprop ro.product.model');
+  pushLine('out', 'Pixel 8 Pro');
+  pushLine('dim', '# 进程已退出，耗时 0.4s');
+  setRunState('ok', '完成');
+  $('#elapsed').textContent = '0.4s';
+  $('#exitCode').textContent = '0';
+  lineCount = 3;
+  $('#lineCount').textContent = '3';
+
+  currentRunCmd = '$ adb -s 47251FDH2004KL shell getprop ro.product.model';
+  runOutputLines = ['Pixel 8 Pro'];
+  updateLastRun(0, '0.4');
+}
+
+init();
+</script>
+</body>
+</html>
