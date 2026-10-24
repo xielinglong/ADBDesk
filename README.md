@@ -1,6 +1,7 @@
 # adb-desk-app
 
 An Electron application with React and TypeScript
+<img width="1392" height="947" alt="2026-10-23-235936" src="https://github.com/user-attachments/assets/73e29ca3-96c7-4baa-a1b0-3849a3469d8b" />
 
 ## Recommended IDE Setup
 
